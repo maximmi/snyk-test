@@ -1,0 +1,72 @@
+# project language
+language: python
+
+# Specify python versions. Will cause to have two builds, one for 2.7 and another for 3.6 executed in parallel.
+python:
+  - '2.7'
+#  - '3.6'
+
+# to use more customizable environment running in a virtual machine
+sudo: enabled
+
+# To use Ubuntu Trusty
+dist: trusty
+
+# Travis CI uses the .travis.yml file from the branch containing the git commit that triggers the build.
+# Include branches using a safelist, or exclude them using a blocklist.
+branches:
+  only:
+  - master
+#  regexp expression for git tag to trigger build
+  - "/^v.*$/"
+
+env:
+# Defining environment variables available in all builds
+  global:
+    - APP_VERSION="v0.1"
+    - DOCKER_STORAGE_OPTIONS="--storage-opt dm.basesize=20G"
+    - MYSQL_HOST="localhost"
+    - MYSQL_USER="root"
+    - MYSQL_PASS=""
+    - MYSQL_DBNAME="test"
+
+services:
+  - docker
+# default version for Ubuntu Trusty is 5.6
+  - mysql
+
+#  this is how we can install mysql 5.7 since Travis does not yet support 5.7 natively
+#addons:
+#  apt:
+#    sources:
+#      - mysql-5.7-trusty
+#    packages:
+#      - mysql-server
+#      - mysql-client
+#  We also need to reset the root password to something other than new_password
+#  good phase to do so is `before_install`
+#before_install:
+#  - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('new_password') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+#  - sudo mysql_upgrade --force
+#  - sudo service mysql restart
+
+before_install:
+  - mysql -e 'CREATE DATABASE test;'
+
+install:
+# actually this is a default install section for Python projects, but here it is as example
+  - pip install -r requirements.txt
+
+# doc: https://docs.travis-ci.com/user/customizing-the-build#git-clone-depth
+# Travis CI clones repositories to a depth of 50 commits, which is only really useful if you are performing git operations.
+git:
+  depth: false
+
+# Phase to run something before script phase. Here is example for multiple matrix environment variables
+#before_script:
+#  - sh -c "if [ '$DB' = 'mysql' ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS tests_tmp; CREATE DATABASE IF NOT EXISTS tests;'; fi"
+
+# main section. this is where build script is specified
+script:
+  - python helloworld.py
+
